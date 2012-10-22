@@ -5,6 +5,7 @@ import Data.Char
 
 
 
+
 a = [1..20]
 b = ['a'..'z']
 c = "abHba"
@@ -200,8 +201,6 @@ removeAt i array = (at_index i array, (slice array 0 i)++(slice array (i+1) (myL
 at_index i array = head (slice array i i)
 
 
-
-
 --problem21
 insertAt :: a -> [a] -> Int -> [a]
 insertAt el array i = (slice array 0 i)++(el:(slice array i (myLength array)))
@@ -214,7 +213,7 @@ range i j = [i..j]
 
 
 --problem23
-
+rnd_select list int = list int
 
 --problem24
 
@@ -231,36 +230,187 @@ range i j = [i..j]
 --  | head array <= head tail array = in_lex (tail array)
 --  | 
 
+fact :: Int -> Integer
+fact n = product [1..fromIntegral n]
+
+nChooseK :: Int -> Int -> [Int]
 nChooseK n k = [1..nchoosek]
-  where nchoosek = fact n / ((fact k) * fact (n-k))
+  where nchoosek = fromInteger (quot (fact n) ((fact k) * fact (n-k)))
 
 kLists_lenN n 0 = []
 kLists_lenN n k = [0..n-1]:kLists_lenN n (k-1)
 
-lexx n = [ [a,b,c] | a <- [0..n-1], b <- [0..n-1], c <- [0..n-1], (a<b), (b<c)]
+myNext :: Eq a => [a] -> a -> a
+myNext array ele
+  | array ## ele /= (myLength array)-1 = array !! ((array ## ele)+1)
+  | otherwise = head array
 
-array ## ele = head [ x | x <- [0..(length array)-1], (array !! x) == ele]
+in_lex_order :: Ord a => [a] -> Bool
+in_lex_order [] = True
+in_lex_order [a] = True
+in_lex_order array
+    | (head array) < myNext array (head array) = in_lex_order (tail array)
+    | otherwise = False 
 
+--combinations n choose 3
+lexxx n = [ [a,b,c] | a <- [0..n-1], b <- [0..n-1], c <- [0..n-1], (a<b), (b<c)]
+
+lexx n k = take k (filter (<=k) [0..n-1])
+
+(##) :: Eq a => [a] -> a -> Int
+(##) array ele = head [ x | x <- [0..(length array)-1], (array !! x) == ele]
+
+
+baseNto10 :: Int -> Int -> Int
+baseNto10 base n
+  | (digitLength n) < 2 = n
+  | otherwise = (nhead)*base^(nlen) + baseNto10 ntail base
+  where nlen = truncate (logBase 10 (fromIntegral n))
+        nhead = quot n 10^nlen
+        ntail = n - (nhead)*10^(nlen)
+
+digitLength :: Int -> Int
+digitLength n = truncate (logBase 10 (fromIntegral n))
+
+headDigit :: Int -> Int
+headDigit n = quot n 10^(digitLength n)
+
+tailDigits :: Int -> Int
+tailDigits n = n - (headDigit n)*10^(digitLength n)
+
+--this only works when N < 10
+b10toN :: Int -> Int -> Int
+b10toN base n = read (conv base n)
+  where conv base n = if base > n then [intToDigit (mod n base)] else (conv base (quot n base))++[intToDigit (mod n base)]
+
+
+combination k list = [ b10toN (length list) x | x <- nChooseK (length list) k]
+
+
+
+--problem27
+
+
+
+--problem28
+q = ["abc", "de", "fgh", "de", "ijkl", "mn", "o"]
+--a
+lsort :: [[a]] -> [[a]]
+lsort [] = []
+lsort (x:xs) = 
+  let smallersorted = lsort [ a | a <- xs, (length a) <= (length x) ]
+      biggersorted = lsort [ a | a <- xs, (length a) > (length x) ]
+  in smallersorted ++ [x] ++ biggersorted
+
+--b
+lfsort :: [[a]] -> [[a]]
+lfsort [] = []
+lfsort array = map (\t -> snd t) (ffsort array)
+
+--helper function for lfsort
+ffsort :: [[a]] -> [(Int, [a])]
+ffsort [] = []
+ffsort array = 
+  let smallersorted = ffsort [ snd a | a <- xs, (fst a) <= (fst x) ]
+      biggersorted = ffsort [ snd a | a <- xs, (fst a) > (fst x) ]
+  in smallersorted ++ [x] ++ biggersorted
+  where eqq = (\x y -> length x == length y)
+        ty = (\x list -> length (filter (eqq x) (list)))
+        quip = (\list -> [ ((ty x list), x) | x <- list])
+        (x:xs) = quip array
+
+
+
+--problem31
+isprime :: Int -> Bool
+isprime 0 = False
+isprime 1 = False
+isprime 2 = True
+isprime n = if not (divides n nsqrt) then True else False
+  where nsqrt = ceiling (sqrt $ fromIntegral n)
+        divides n 2 = if (mod n 2 == 0) then True else False
+        divides n m = if (mod n m == 0) then True else False || (divides n (m-1))
+
+
+--problem32
+euclidGCD :: Int -> Int -> Int
+euclidGCD n m
+  | n /= m = euclidGCD (min n m) ((max n m) - (min n m))
+  | otherwise = n
+
+--problem33
+coprime :: Int -> Int -> Bool
+coprime n m = if (euclidGCD n m == 1) then True else False
+
+--problem34
+totient :: Int -> Int
+totient n = sum (map (\t -> if (coPrime t) then 1 else 0) [1..n])
+  where coPrime = coprime n
+  
+--problem35
+primeFactors n
+  | isprime n = [n]
+  | otherwise = 
+    let nsqrt = (ceiling . sqrt . fromIntegral) n
+        divides n m = if (mod n m == 0) then m else divides n (m-1)
+        greatestDivisor n = if (mod n nsqrt == 0) then nsqrt else divides n (nsqrt-1) 
+    in sort $ (primeFactors $ greatestDivisor n) ++ (primeFactors $ n `div` (greatestDivisor n))
+    
+--problem36
+encPrimeFactors :: Int -> [(Int, Int)]
+encPrimeFactors n = map (\t -> (head t, length t)) $ (intPack . primeFactors) n
+
+intPack :: [Int] -> [[Int]]
+intPack [] = []
+intPack (x:xs) = 
+  let y = filter (\t -> t == x) (x:xs) 
+  in y : (intPack $ (x:xs) \\ y)
 
 
 
   
+--problem37
+phi :: Int -> Int
+phi n = foldl (*) 1 $ map (\t -> ((fst t)-1)*((fst t)^((snd t)-1))) enc
+  where enc = encPrimeFactors n
+     
+--problem39
+sieve_of_eratosthenes :: Int -> [Int]
+sieve_of_eratosthenes n =
+  let psieve n k nlist 
+        | k < nsqrt = psieve n (k+1) $ filter (\t -> if t > k then mod t k /= 0 else True) nlist
+        | otherwise = filter (\t -> if t > k then mod t k /= 0 else True) nlist
+        where nsqrt = (ceiling . sqrt . fromIntegral) n
+  in psieve n 2 [2..n]
 
-fact n = foldl (*) 1 [1..n]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--problem40
+goldbach :: Int -> [Int]
+goldbach n = 
+  let hasAddend x n list = any (\t -> (t + x) == n) list
+      addends n (x:xs)
+        | hasAddend x n (x:xs) = x : filter (\t -> (t + x) == n) (x:xs)
+        | otherwise = addends n xs
+  in addends n $ sieve_of_eratosthenes n
   
+  
+--problem41
+goldbachList :: Int -> Int -> [[Int]]
+goldbachList m n = map goldbach $ filter (\t -> t>=m && even t) [3..n]
+
+
+
+--problem49
+data Bit = 0 | 1 deriving (Show)
+
+-- data BitString = [Bit] deriving (Show)
+-- 
+-- gray 2 = [ BitString [ Bit 0, Bit 0], BitString [ Bit 0, Bit 1] ]
+
+
+
+
+
+
+
+
+

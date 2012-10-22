@@ -1,7 +1,10 @@
 --help.hs
 
-module Help (NestedList a)
-where 
-  
-data Elem a = a
-data NestedList a = Elem a | List [NestedList a]
+main = do  
+    putStrLn "Hello, what's your name?"  
+    name <- getLine  
+    putStrLn ("Hey " ++ name ++ ", you rock!")
+
+dMe x = x*2
+
+
